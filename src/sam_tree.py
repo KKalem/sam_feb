@@ -8,21 +8,38 @@ from __future__ import print_function
 import rospy
 import actionlib
 
-from std_msgs.msg import Empty, Bool
+from std_msgs.msg import Empty, Bool, Float
 
 from bee_tea.msg import BTAction, BTGoal, BTFeedback
 from bee_tea.bt_states import SUCCESS, FAILURE, RUNNING
 from bee_tea.bt_pieces import ActionNodeLeaf, InstantLeaf, Seq, Fallback, Negate
 
 class SAM:
-    def __init__(self):
+    def __init__(self, setpoint_list=None):
         """
         create subscribers and such here
         """
+
         self.mission_complete_flag = False
         self.safety_action_tried_flag = False
+
         self.is_safe_flag = True
         emergency_stop_sub = rospy.Subscriber("/abort", Empty, self.abort_cb)
+
+        self.pitch = 0.0
+        pitch_sub = rospy.Subscriber("/feedback_pitch", Float, self.pitch_update_cb)
+
+        self.depth = 0.0
+        depth_sub = rospy.Subscriber("/feedback_depth", Float, self.depth_update_cb)
+
+        self.setpoint_list = setpoint_list
+        self.current_target = None
+
+    def pitch_update(self, data):
+        self.pitch = data.data
+
+    def depth_update(self, data):
+        self.depth = data.data
 
 
     def is_safety_action_tried(self):
@@ -83,6 +100,34 @@ class SAM:
         rospy.logdebug('Idling...')
         return RUNNING
 
+    def have_target(self):
+        if self.current_target is None:
+            return SUCCESS
+
+        return FAILURE
+
+    def pop_target(self):
+        if len(self.setpoint_list)>0:
+            self.current_target = self.setpoint_list[0]
+            self.setpoint_list = self.setpoint_list[1:]
+            return SUCCESS
+
+        return FAILURE
+
+    def at_target(self):
+        depth, pitch = self.current_target
+        if abs(depth - self.depth) < 0.1 and abs(pitch - self.pitch) < 0.1:
+            return SUCCESS
+
+        return FAILURE
+
+
+    def reset_target(self):
+        self.current_target = None
+
+    def get_target(self):
+        return self.current_target
+
 
 
 if __name__ == '__main__':
@@ -97,7 +142,7 @@ if __name__ == '__main__':
     safety_action = ActionNodeLeaf('sam_emergency', goal='-No goal, just float up-')
     execute_mission = ActionNodeLeaf('sam_sines', goal='3')
     # TODO use this somewhere?
-    #  setpoint = ActionNodeLeaf('sam_setpoint', goal='0.5')
+    setpoint_action = ActionNodeLeaf('sam_setpoint', goal_fn=sam.get_target)
 
     # safety
     safety_check = Fallback('safety_check')
@@ -139,6 +184,21 @@ if __name__ == '__main__':
     mission_exec.add_child(mission_seq)
     mission_exec.add_child(InstantLeaf('idle : mission action failed', sam.idle))
 
+    waypoint_follower = Seq('waypoint follower')
+    acquire_target = Fallback('acquire target')
+    acquire_target.add_child(InstantLeaf('have target', sam.have_target))
+    acquire_target.add_child(InstantLeaf('pop target', sam.pop_target))
+    waypoint_follower.add_child(acquire_target)
+
+    follow_target = Fallback('follow target')
+    follow_target.add_child(InstantLeaf('at target', sam.at_target))
+    follow_target.add_child(setpoint_action)
+    waypoint_follower.add_child(follow_target)
+
+    waypoint_follower.add_child(InstantLeaf('reset target', sam.reset_target))
+
+
+    # replace with waypoint follower
     root.add_child(mission_exec)
 
     # mission finalise
