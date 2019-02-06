@@ -55,9 +55,11 @@ class emergency_action(BT_ActionNode):
                 sam_publisher.publish(fs)
             # we are done doing the action succesfully
             self.done_once = True
+            rospy.loginfo('Emergency action SUCCESS')
             return True
 
         # something went wrong, we fucked up
+        rospy.loginfo('Emergency action FAILURE')
         return False
 
 

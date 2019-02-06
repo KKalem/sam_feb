@@ -49,7 +49,7 @@ class SAM:
         return SUCCESS
 
     def mission_complete(self):
-        rospy.loginfo('Mission is complete')
+        rospy.loginfo('Mission is not complete')
         return FAILURE
 
     def finalised(self):
