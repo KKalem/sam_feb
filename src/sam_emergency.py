@@ -15,6 +15,8 @@ import time, math
 from std_msgs.msg import Float64, Header, Bool
 from uuv_gazebo_ros_plugins_msgs.msg import FloatStamped
 
+from sam_msgs.msg import PercentStamped
+
 
 class emergency_action(BT_ActionNode):
 
@@ -33,8 +35,11 @@ class emergency_action(BT_ActionNode):
         rospy.loginfo("Emergency action received goal: "+str(goal))
 
 
-        sam_publisher = rospy.Publisher('/sam_auv_1/thrusters/0/input',
-                                        FloatStamped,
+        #sam_publisher = rospy.Publisher('/sam_auv_1/thrusters/0/input',
+         #                               FloatStamped,
+          #                              queue_size = 100)
+        sam_publisher = rospy.Publisher('/uavcan_vbs_command/',
+                                        PercentStamped,
                                         queue_size = 100)
 
         #self.emergency_activated = False
@@ -53,10 +58,11 @@ class emergency_action(BT_ActionNode):
                     break
 
                 elapsed = rospy.get_time() - start_time
-                fs = FloatStamped()
+                #fs = FloatStamped()
+                fs = PercentStamped()
                 h = Header()
                 fs.header = h
-                fs.data = 200
+                fs.data = 0
                 sam_publisher.publish(fs)
                 time.sleep(0.1)
             # we are done doing the action succesfully
