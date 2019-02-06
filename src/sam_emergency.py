@@ -29,7 +29,6 @@ class emergency_action(BT_ActionNode):
         rospy.loginfo("Emergency action received goal: "+str(goal))
 
 
-        # TODO make this useful
         sam_publisher = rospy.Publisher('/sam_auv_1/thrusters/0/input',
                                         FloatStamped,
                                         queue_size = 100)
@@ -37,7 +36,9 @@ class emergency_action(BT_ActionNode):
         #self.emergency_activated = False
         #sam_sub = rospy.Subscriber('/sam_auv_1/emergency_butt', Bool, self.emergency_cb)
 
-        while not rospy.is_shutdown():
+        self.done_once = False
+
+        while not rospy.is_shutdown() and not self.done_once:
             time.sleep(0.5)
             #rospy.loginfo('Emergency waiting for butt')
             #if self.emergency_activated:
@@ -53,6 +54,7 @@ class emergency_action(BT_ActionNode):
                 fs.data = 200
                 sam_publisher.publish(fs)
             # we are done doing the action succesfully
+            self.done_once = True
             return True
 
         # something went wrong, we fucked up

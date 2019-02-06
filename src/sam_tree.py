@@ -82,7 +82,13 @@ if __name__ == '__main__':
     # safety
     safety_check = Fallback('safety_check')
     safety_check.add_child(InstantLeaf('safe?', sam.is_safe))
-    safety_check.add_child(safety_action)
+
+    # catch the time when safety action succeeds, we dont want anything else to run afterwards
+    safety_done_idle = Seq('safety_done_idle')
+    safety_done_idle.add_child(safety_action)
+    safety_done_idle.add_child(InstantLeaf('idle after safety action done', sam.idle))
+    safety_check.add_child(safety_done_idle)
+
     root.add_child(safety_check)
 
     # system prep
