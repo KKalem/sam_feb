@@ -94,8 +94,10 @@ if __name__ == '__main__':
     root = Seq('Root')
 
     # actionlib nodes, to be used later
-    safety_action = ActionNodeLeaf('sam_emergency', goal='No goal, just float up')
+    safety_action = ActionNodeLeaf('sam_emergency', goal='-No goal, just float up-')
     execute_mission = ActionNodeLeaf('sam_sines', goal='3')
+    # TODO use this somewhere?
+    setpoint = ActionNodeLeaf('sam_setpoint', goal='0.5')
 
     # safety
     safety_check = Fallback('safety_check')
