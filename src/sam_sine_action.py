@@ -52,6 +52,9 @@ class sine_action(BT_ActionNode):
             start_time = rospy.get_time()
             elapsed = 0.0
             while elapsed < time_per_sine:
+                if rospy.is_shutdown():
+                    break
+
                 elapsed = rospy.get_time() - start_time
                 sine_elapsed = a * (math.sin(w * elapsed) + offset)
                 # publish!
