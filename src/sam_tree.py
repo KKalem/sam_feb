@@ -8,6 +8,8 @@ from __future__ import print_function
 import rospy
 import actionlib
 
+from std_msgs.msg import Empty, Bool
+
 from bee_tea.msg import BTAction, BTGoal, BTFeedback
 from bee_tea.bt_states import SUCCESS, FAILURE, RUNNING
 from bee_tea.bt_pieces import ActionNodeLeaf, InstantLeaf, Seq, Fallback, Negate
@@ -17,9 +19,17 @@ class SAM:
         """
         create subscribers and such here
         """
+        self.is_safe_flag = True
+        emergency_stop_sub = rospy.Subscriber("/abort", Empty, self.abort_cb)
         pass
 
+    def abort_cb(self, data):
+        self.is_safe_flag = False
+
     def is_safe(self):
+        if self.is_safe_flag:
+            return SUCCESS
+
         return FAILURE
 
     def continue_command_received(self):
@@ -64,6 +74,8 @@ if __name__ == '__main__':
 
     # actionlib nodes, to be used later
     # TODO make action names rosparams at some point
+    rospy.init_node('BT')
+
     safety_action = ActionNodeLeaf('sam_emergency', goal='No goal, just float up')
     execute_mission = ActionNodeLeaf('sam_sines', goal='3')
 
@@ -131,5 +143,3 @@ if __name__ == '__main__':
 
         # i am not as fast as the CPU, normally not needed
         rate.sleep()
-
-

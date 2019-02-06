@@ -18,8 +18,8 @@ from uuv_gazebo_ros_plugins_msgs.msg import FloatStamped
 
 class emergency_action(BT_ActionNode):
 
-    def emergency_cb(self, data):
-        self.emergency_activated = data.data
+    #def emergency_cb(self, data):
+     #   self.emergency_activated = data.data
 
 
     def act(self, goal):
@@ -34,26 +34,26 @@ class emergency_action(BT_ActionNode):
                                         FloatStamped,
                                         queue_size = 100)
 
-        self.emergency_activated = False
-        sam_sub = rospy.Subscriber('/sam_auv_1/emergency_butt', Bool, self.emergency_cb)
+        #self.emergency_activated = False
+        #sam_sub = rospy.Subscriber('/sam_auv_1/emergency_butt', Bool, self.emergency_cb)
 
-        while True:
+        while not rospy.is_shutdown():
             time.sleep(0.5)
-            rospy.loginfo('Emergency waiting for butt')
-            if self.emergency_activated:
-                rospy.loginfo('Butt activated')
-                start_time = rospy.get_time()
-                elapsed = 0
-                while elapsed < 3:
-                    rospy.loginfo('FARTING AWAY')
-                    elapsed = rospy.get_time() - start_time
-                    fs = FloatStamped()
-                    h = Header()
-                    fs.header = h
-                    fs.data = 200
-                    sam_publisher.publish(fs)
-                # we are done doing the action succesfully
-                return True
+            #rospy.loginfo('Emergency waiting for butt')
+            #if self.emergency_activated:
+             #   rospy.loginfo('Butt activated')
+            start_time = rospy.get_time()
+            elapsed = 0
+            while elapsed < 3:
+                rospy.loginfo('FARTING AWAY')
+                elapsed = rospy.get_time() - start_time
+                fs = FloatStamped()
+                h = Header()
+                fs.header = h
+                fs.data = 200
+                sam_publisher.publish(fs)
+            # we are done doing the action succesfully
+            return True
 
         # something went wrong, we fucked up
         return False
@@ -62,6 +62,6 @@ class emergency_action(BT_ActionNode):
 
 if __name__=='__main__':
 
-    emergency_action("test")
+    emergency_action("sam_emergency")
     rospy.spin()
 
