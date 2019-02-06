@@ -47,7 +47,7 @@ class sine_action(BT_ActionNode):
 
         num_sines_todo = int(goal)
 
-        while not rospy.is_shutdown() or (num_sines_todo > 0):
+        while not rospy.is_shutdown() and num_sines_todo > 0:
             num_sines_todo -= 1
             start_time = rospy.get_time()
             elapsed = 0.0
