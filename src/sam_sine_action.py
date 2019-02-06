@@ -49,6 +49,7 @@ class sine_action(BT_ActionNode):
             num_sines_todo -= 1
             start_time = rospy.get_time()
             elapsed = 0.0
+            rospy.loginfo("Sines active...")
             while elapsed < time_per_sine:
                 if rospy.is_shutdown():
                     break
@@ -57,12 +58,16 @@ class sine_action(BT_ActionNode):
                 sine_elapsed = a * (math.sin(w * elapsed) + offset)
                 # publish!
                 sam_publisher.publish(sine_elapsed)
-                rospy.loginfo("Sine elapsed:"+str(sine_elapsed)+" sine_todo:"+str(num_sines_todo))
+                #  rospy.logdebug("Sine elapsed:"+str(sine_elapsed)+" sine_todo:"+str(num_sines_todo))
                 time.sleep(0.5)
 
         # return True 
         if num_sines_todo == 0:
+            rospy.loginfo("Sines done")
             return True
+
+        rospy.loginfo("Sines failed")
+        return False
 
 
 
