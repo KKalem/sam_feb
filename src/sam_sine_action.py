@@ -30,22 +30,17 @@ class sine_action(BT_ActionNode):
         time_per_sine = 10
 
         # TODO make this useful
-        sam_publisher = rospy.Publisher('/sam_auv_1/joint1_position_controller/command',
-                                        Float64)
+        sam_publisher = rospy.Publisher('/pitch_setpoint',
+                                        Float64,
+                                        queue_size = 100)
         # some sub if needed
         # function should take the message and do something with it
         # callback should do stuff like:
             # self.target_set_whatever = data.data.sine_value
         #  sine_sub = rospy.Subscriber('/topic/here', message_name_here, callback_function_here)
 
-        # hack until we have a real tree that sends integers and not 's'es
-        if goal == 's':
-            goal = '3'
-        else:
-            goal = '10'
-        # </hack>
 
-        num_sines_todo = int(goal)
+        num_sines_todo = 3
 
         while not rospy.is_shutdown() and num_sines_todo > 0:
             num_sines_todo -= 1
@@ -71,6 +66,6 @@ class sine_action(BT_ActionNode):
 
 if __name__=='__main__':
 
-    sine_action("test")
+    sine_action("sam_sines")
     rospy.spin()
 

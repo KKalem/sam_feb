@@ -19,9 +19,21 @@ class SAM:
         """
         create subscribers and such here
         """
+        self.mission_complete_flag = False
+        self.safety_action_tried_flag = False
         self.is_safe_flag = True
         emergency_stop_sub = rospy.Subscriber("/abort", Empty, self.abort_cb)
-        pass
+
+
+    def is_safety_action_tried(self):
+        if self.safety_action_tried_flag:
+            return FAILURE
+
+        return SUCCESS
+
+    def set_safety_action_tried(self):
+        self.safety_action_tried_flag = True
+        return SUCCESS
 
     def abort_cb(self, data):
         self.is_safe_flag = False
@@ -33,49 +45,55 @@ class SAM:
         return FAILURE
 
     def continue_command_received(self):
-        rospy.loginfo('Continue command received')
+        rospy.logdebug('Continue command received')
         return SUCCESS
 
     def prepare_system(self):
-        rospy.loginfo('System prepared')
+        rospy.logdebug('System prepared')
         return SUCCESS
 
     def mission_synchronised(self):
-        rospy.loginfo('Mission is already synchronised')
+        rospy.logdebug('Mission is already synchronised')
         return SUCCESS
 
     def synchronise_mission(self):
-        rospy.loginfo('Mission is synchronised')
+        rospy.logdebug('Mission is synchronised')
         return SUCCESS
 
+    def mark_mission_complete(self):
+        self.mission_complete_flag = True
+
     def mission_complete(self):
-        rospy.loginfo('Mission is not complete')
+        if self.mission_complete_flag:
+            rospy.logdebug('Mission is complete')
+            return SUCCESS
+
+        rospy.logdebug('Mission is not complete')
         return FAILURE
 
     def finalised(self):
-        rospy.loginfo('Mission is already finalised')
+        rospy.logdebug('Mission is already finalised')
         return SUCCESS
 
     def finalise(self):
-        rospy.loginfo('Finalised mission')
+        rospy.logdebug('Finalised mission')
         return SUCCESS
 
     def idle(self):
-        rospy.loginfo('Idling...')
+        rospy.logdebug('Idling...')
         return RUNNING
 
 
 
 if __name__ == '__main__':
+    rospy.init_node('BT')
+
     sam = SAM()
 
     # root of the tree
     root = Seq('Root')
 
     # actionlib nodes, to be used later
-    # TODO make action names rosparams at some point
-    rospy.init_node('BT')
-
     safety_action = ActionNodeLeaf('sam_emergency', goal='No goal, just float up')
     execute_mission = ActionNodeLeaf('sam_sines', goal='3')
 
@@ -85,38 +103,50 @@ if __name__ == '__main__':
 
     # catch the time when safety action succeeds, we dont want anything else to run afterwards
     safety_done_idle = Seq('safety_done_idle')
+    safety_done_idle.add_child(InstantLeaf('flag check: safety tried?', sam.is_safety_action_tried))
     safety_done_idle.add_child(safety_action)
-    safety_done_idle.add_child(InstantLeaf('idle after safety action done', sam.idle))
+    safety_done_idle.add_child(InstantLeaf('flag set: safety_action_tried_flag', sam.set_safety_action_tried))
+    safety_done_idle.add_child(InstantLeaf('idle : safety action SUCCESS', sam.idle))
+
     safety_check.add_child(safety_done_idle)
+    safety_done_idle.add_child(InstantLeaf('flag set: safety_action_tried_flag', sam.set_safety_action_tried))
+    safety_check.add_child(InstantLeaf('idle : safety_action FAILURE', sam.idle))
 
     root.add_child(safety_check)
 
     # system prep
-    sys_prep = Fallback('sys_prep')
-    sys_prep.add_child(InstantLeaf('continue command?', sam.continue_command_received))
-    sys_prep.add_child(InstantLeaf('prepare system', sam.prepare_system))
-    root.add_child(sys_prep)
+    #  sys_prep = Fallback('sys_prep')
+    #  sys_prep.add_child(InstantLeaf('continue command?', sam.continue_command_received))
+    #  sys_prep.add_child(InstantLeaf('prepare system', sam.prepare_system))
+    #  root.add_child(sys_prep)
 
     # mission sync
-    mission_sync = Fallback('mission_sync')
-    mission_sync.add_child(InstantLeaf('mission synchronised?', sam.mission_synchronised))
-    mission_sync.add_child(InstantLeaf('synchronise_mission', sam.synchronise_mission))
-    root.add_child(mission_sync)
+    #  mission_sync = Fallback('mission_sync')
+    #  mission_sync.add_child(InstantLeaf('mission synchronised?', sam.mission_synchronised))
+    #  mission_sync.add_child(InstantLeaf('synchronise_mission', sam.synchronise_mission))
+    #  root.add_child(mission_sync)
 
     # mission exec
     mission_exec = Fallback('mission_exec')
-    mission_exec.add_child(InstantLeaf('mission_complete?', sam.mission_complete))
-    mission_exec.add_child(execute_mission)
+    mission_exec.add_child(InstantLeaf('flag check: mission_complete?', sam.mission_complete))
+
+    mission_seq = Seq('mission_seq')
+    mission_seq.add_child(execute_mission)
+    mission_seq.add_child(InstantLeaf('flag set: mark mission complete', sam.mark_mission_complete))
+
+    mission_exec.add_child(mission_seq)
+    mission_exec.add_child(InstantLeaf('idle : mission action failed', sam.idle))
+
     root.add_child(mission_exec)
 
     # mission finalise
-    mission_finalise = Fallback('mission_finalise')
-    mission_finalise.add_child(InstantLeaf('finalised?', sam.finalised))
-    mission_finalise.add_child(InstantLeaf('finalse', sam.finalise))
-    root.add_child(mission_finalise)
+    #  mission_finalise = Fallback('mission_finalise')
+    #  mission_finalise.add_child(InstantLeaf('finalised?', sam.finalised))
+    #  mission_finalise.add_child(InstantLeaf('finalse', sam.finalise))
+    #  root.add_child(mission_finalise)
 
     # idle in the end to prevent the tree from 'succeeding'
-    root.add_child(InstantLeaf('IDLE', sam.idle))
+    root.add_child(InstantLeaf('idle : all success!', sam.idle))
 
     # TREE COMPLETE
 
