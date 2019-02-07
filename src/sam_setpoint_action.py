@@ -16,27 +16,30 @@ from std_msgs.msg import Float64
 
 
 class setpoint_action(BT_ActionNode):
+    def __init__(self, action_name):
+        BT_ActionNode.__init__(self, name=action_name)
+
+        self.pitch_publisher = rospy.Publisher('/pitch_setpoint',
+                                                Float64,
+                                                queue_size = 100)
+
+        self.depth_publisher = rospy.Publisher('/depth_setpoint',
+                                                Float64,
+                                                queue_size = 100)
+
+
     def act(self, goal):
         """
         Return True if action is complete otherwise False
         """
         rospy.loginfo("setpoint action received goal: "+str(goal))
 
-        # TODO make this useful
-        pitch_publisher = rospy.Publisher('/pitch_setpoint',
-                                        Float64,
-                                        queue_size = 100)
-
-        depth_publisher = rospy.Publisher('/depth_setpoint',
-                                        Float64,
-                                        queue_size = 100)
 
         goal = eval(goal)
         if goal is None:
             return False
 
         pitch, depth = goal
-
         publish_for = 0.5
 
         while not rospy.is_shutdown():
@@ -47,8 +50,8 @@ class setpoint_action(BT_ActionNode):
                     break
                 elapsed = rospy.get_time() - start_time
                 # publish!
-                pitch_publisher.publish(pitch)
-                depth_publisher.publish(depth)
+                self.pitch_publisher.publish(pitch)
+                self.depth_publisher.publish(depth)
 
         return True
 

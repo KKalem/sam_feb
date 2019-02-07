@@ -5,7 +5,7 @@
 
 from __future__ import print_function
 
-import rospy
+import rospy, time
 import actionlib
 
 from std_msgs.msg import Empty, Bool, Float64
@@ -15,7 +15,7 @@ from bee_tea.bt_states import SUCCESS, FAILURE, RUNNING
 from bee_tea.bt_pieces import ActionNodeLeaf, InstantLeaf, Seq, Fallback, Negate
 
 DEPTH_THRESH = 0.05
-PITCH_THRESH = 0.1
+PITCH_THRESH = 0.05
 
 class SAM:
     def __init__(self, setpoint_list=None):
@@ -116,14 +116,17 @@ class SAM:
         if len(self.setpoint_list)>0:
             self.current_target = self.setpoint_list[0]
             self.setpoint_list = self.setpoint_list[1:]
+            rospy.loginfo('Current target:'+str(self.current_target))
+            rospy.loginfo('Remaining targets:'+str(self.setpoint_list))
             return SUCCESS
 
         return FAILURE
 
     def at_target(self):
         if self.current_target is not None:
-            depth, pitch = self.current_target
+            pitch, depth = self.current_target
             if abs(depth - self.depth) < DEPTH_THRESH and abs(pitch - self.pitch) < PITCH_THRESH :
+                rospy.loginfo('Reached target:'+str(self.current_target))
                 return SUCCESS
 
         return FAILURE
@@ -140,9 +143,9 @@ class SAM:
 if __name__ == '__main__':
     rospy.init_node('BT')
 
-    # REPLACE X Y WITH REAL VALUES
-    sam = SAM(setpoint_list=[(0.5, 1)])
-    #sam = SAM(setpoint_list=[(0.5, 1), (0.5, 2)])
+    # THESE ARE PITCH,DEPTH
+    #  sam = SAM(setpoint_list=[(0.5, 1)])
+    sam = SAM(setpoint_list=[(0.5, 1), (0.5, 2)])
 
     # root of the tree
     root = Seq('Root')
@@ -159,7 +162,7 @@ if __name__ == '__main__':
 
     # catch the time when safety action succeeds, we dont want anything else to run afterwards
     safety_done_idle = Seq('safety_done_idle')
-    safety_done_idle.add_child(InstantLeaf('flag check: safety tried?', sam.is_safety_action_tried))
+    safety_done_idle.add_child(InstantLeaf('flag check: safety not tried?', sam.is_safety_action_tried))
     safety_done_idle.add_child(safety_action)
     safety_done_idle.add_child(InstantLeaf('flag set: safety_action_tried_flag', sam.set_safety_action_tried))
     safety_done_idle.add_child(InstantLeaf('idle : safety action SUCCESS', sam.idle))
