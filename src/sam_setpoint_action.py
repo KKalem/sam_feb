@@ -32,6 +32,9 @@ class setpoint_action(BT_ActionNode):
                                         queue_size = 100)
 
         goal = eval(goal)
+        if goal is None:
+            return False
+
         pitch, depth = goal
 
         publish_for = 0.5
@@ -52,6 +55,6 @@ class setpoint_action(BT_ActionNode):
 
 if __name__=='__main__':
 
-    sine_action("sam_setpoint")
+    setpoint_action("sam_setpoint")
     rospy.spin()
 

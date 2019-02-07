@@ -9,5 +9,6 @@
 	<node pkg="sam_feb" type="sam_tree.py" name="$(arg namespace)_$(arg number)_btree" output="screen"></node>
 	<node pkg="sam_feb" type="sam_emergency.py" name="$(arg namespace)_$(arg number)_emergency_action" output="screen"></node>
 	<node pkg="sam_feb" type="sam_sine_action.py" name="$(arg namespace)_$(arg number)_mission_action" output="screen"></node>
+	<node pkg="sam_feb" type="sam_setpoint_action.py" name="$(arg namespace)_$(arg number)_setpoint_action" output="screen"></node>
 
 </launch>

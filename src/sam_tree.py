@@ -8,7 +8,7 @@ from __future__ import print_function
 import rospy
 import actionlib
 
-from std_msgs.msg import Empty, Bool, Float
+from std_msgs.msg import Empty, Bool, Float64
 
 from bee_tea.msg import BTAction, BTGoal, BTFeedback
 from bee_tea.bt_states import SUCCESS, FAILURE, RUNNING
@@ -27,10 +27,10 @@ class SAM:
         emergency_stop_sub = rospy.Subscriber("/abort", Empty, self.abort_cb)
 
         self.pitch = 0.0
-        pitch_sub = rospy.Subscriber("/feedback_pitch", Float, self.pitch_update_cb)
+        pitch_sub = rospy.Subscriber("/feedback_pitch", Float64, self.pitch_update_cb)
 
         self.depth = 0.0
-        depth_sub = rospy.Subscriber("/feedback_depth", Float, self.depth_update_cb)
+        depth_sub = rospy.Subscriber("/feedback_depth", Float64, self.depth_update_cb)
 
         if setpoint_list is not None:
             self.setpoint_list = setpoint_list
@@ -38,10 +38,10 @@ class SAM:
             self.setpoint_list = []
         self.current_target = None
 
-    def pitch_update(self, data):
+    def pitch_update_cb(self, data):
         self.pitch = data.data
 
-    def depth_update(self, data):
+    def depth_update_cb(self, data):
         self.depth = data.data
 
 
@@ -104,7 +104,7 @@ class SAM:
         return RUNNING
 
     def have_target(self):
-        if self.current_target is None:
+        if self.current_target is not None:
             return SUCCESS
 
         return FAILURE
@@ -118,9 +118,10 @@ class SAM:
         return FAILURE
 
     def at_target(self):
-        depth, pitch = self.current_target
-        if abs(depth - self.depth) < 0.1 and abs(pitch - self.pitch) < 0.1:
-            return SUCCESS
+        if self.current_target is not None:
+            depth, pitch = self.current_target
+            if abs(depth - self.depth) < 0.1 and abs(pitch - self.pitch) < 0.1:
+                return SUCCESS
 
         return FAILURE
 
