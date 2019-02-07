@@ -15,22 +15,24 @@ import time, math
 from std_msgs.msg import Float64
 
 
-class sine_action(BT_ActionNode):
+class setpoint_action(BT_ActionNode):
     def act(self, goal):
         """
         Return True if action is complete otherwise False
         """
-        rospy.loginfo("Sine action received goal: "+str(goal))
+        rospy.loginfo("setpoint action received goal: "+str(goal))
 
         # TODO make this useful
-        sam_publisher = rospy.Publisher('/pitch_setpoint',
+        pitch_publisher = rospy.Publisher('/pitch_setpoint',
                                         Float64,
                                         queue_size = 100)
 
-        try:
-            goal = float(goal)
-        except:
-            goal = 0.5
+        depth_publisher = rospy.Publisher('/depth_setpoint',
+                                        Float64,
+                                        queue_size = 100)
+
+        goal = eval(goal)
+        pitch, depth = goal
 
         publish_for = 0.5
 
@@ -42,7 +44,8 @@ class sine_action(BT_ActionNode):
                     break
                 elapsed = rospy.get_time() - start_time
                 # publish!
-                sam_publisher.publish(goal)
+                pitch_publisher.publish(pitch)
+                depth_publisher.publish(depth)
 
         return True
 

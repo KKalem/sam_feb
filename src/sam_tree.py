@@ -32,7 +32,10 @@ class SAM:
         self.depth = 0.0
         depth_sub = rospy.Subscriber("/feedback_depth", Float, self.depth_update_cb)
 
-        self.setpoint_list = setpoint_list
+        if setpoint_list is not None:
+            self.setpoint_list = setpoint_list
+        else:
+            self.setpoint_list = []
         self.current_target = None
 
     def pitch_update(self, data):
@@ -126,14 +129,16 @@ class SAM:
         self.current_target = None
 
     def get_target(self):
-        return self.current_target
+        return str(self.current_target)
 
 
 
 if __name__ == '__main__':
     rospy.init_node('BT')
 
-    sam = SAM()
+    # REPLACE X Y WITH REAL VALUES
+    sam = SAM(setpoint_list=[(0.5, 1)])
+    #sam = SAM(setpoint_list=[(0.5, 1), (0.5, 2)])
 
     # root of the tree
     root = Seq('Root')
@@ -177,12 +182,7 @@ if __name__ == '__main__':
     mission_exec = Fallback('mission_exec')
     mission_exec.add_child(InstantLeaf('flag check: mission_complete?', sam.mission_complete))
 
-    mission_seq = Seq('mission_seq')
-    mission_seq.add_child(execute_mission)
-    mission_seq.add_child(InstantLeaf('flag set: mark mission complete', sam.mark_mission_complete))
 
-    mission_exec.add_child(mission_seq)
-    mission_exec.add_child(InstantLeaf('idle : mission action failed', sam.idle))
 
     waypoint_follower = Seq('waypoint follower')
     acquire_target = Fallback('acquire target')
@@ -198,7 +198,17 @@ if __name__ == '__main__':
     waypoint_follower.add_child(InstantLeaf('reset target', sam.reset_target))
 
 
-    # replace with waypoint follower
+    mission_seq = Seq('mission_seq')
+    ############## replace with waypoint follower
+    # mission_seq.add_child(execute_mission)
+    mission_seq.add_child(waypoint_follower)
+    mission_seq.add_child(InstantLeaf('flag set: mark mission complete', sam.mark_mission_complete))
+
+    mission_exec.add_child(mission_seq)
+    mission_exec.add_child(InstantLeaf('idle : mission action failed', sam.idle))
+
+
+
     root.add_child(mission_exec)
 
     # mission finalise
