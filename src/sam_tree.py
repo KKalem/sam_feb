@@ -14,6 +14,9 @@ from bee_tea.msg import BTAction, BTGoal, BTFeedback
 from bee_tea.bt_states import SUCCESS, FAILURE, RUNNING
 from bee_tea.bt_pieces import ActionNodeLeaf, InstantLeaf, Seq, Fallback, Negate
 
+DEPTH_THRESH = 0.05
+PITCH_THRESH = 0.1
+
 class SAM:
     def __init__(self, setpoint_list=None):
         """
@@ -120,7 +123,7 @@ class SAM:
     def at_target(self):
         if self.current_target is not None:
             depth, pitch = self.current_target
-            if abs(depth - self.depth) < 0.1 and abs(pitch - self.pitch) < 0.1:
+            if abs(depth - self.depth) < DEPTH_THRESH and abs(pitch - self.pitch) < PITCH_THRESH :
                 return SUCCESS
 
         return FAILURE
